@@ -3,9 +3,11 @@ import sys
 import dearpygui.dearpygui as dpg
 import os
 import yt_dlp
-import tkinter as tk
-from tkinter import filedialog
-import ffmpeg
+from openPath import examinar
+
+WIDTH = 600
+HEIGHT = 600
+
 
 def log(msg):
     current_text = dpg.get_value("log")
@@ -17,6 +19,7 @@ class LogRedirect(io.StringIO):
         current_text = dpg.get_value("log")
         next_text = current_text + msg
         dpg.set_value("log", next_text)
+        
 
 def descargar():
 
@@ -50,25 +53,22 @@ def descargar():
         ]
            
     for i in range(len(URL)):
-        ydl = yt_dlp.YoutubeDL(ydl_opts)
-        ydl.download(URL[i])
-           
+        try: 
+            ydl = yt_dlp.YoutubeDL(ydl_opts)
+            ydl.download(URL[i])
+            log(f"Descarga completada: {url}\n")
+        except Exception as e:
+            log(f"Error descargando {url}: {str(e)}\n")
 
-def examinar():
-    root = tk.Tk()
-    root.withdraw()  
-    
-    directory_path = filedialog.askdirectory(title="Selecciona una carpeta")
-    if directory_path:
-        dpg.set_value("path", directory_path)
+
     
 def limpiar_urls():
     dpg.set_value("urls", "")
 
 
 
-sys.stdout = LogRedirect()
-sys.stderr = LogRedirect()
+# sys.stdout = LogRedirect()
+# sys.stderr = LogRedirect()
 
 dpg.create_context()
 
@@ -77,9 +77,11 @@ with dpg.font_registry():
     default_font = dpg.add_font("assets/OpenSans-Regular.ttf", 20)
 
 
-with dpg.window(tag="Primary Window", no_resize=True, width=600, height=600):
+with dpg.window(tag="Primary Window", no_resize=True, width=WIDTH, height=HEIGHT):
 
     dpg.bind_font(default_font)
+
+    
 
     dpg.add_text(default_value="Ingrese las URLs de YouTube aquí:")
     with dpg.group(horizontal=True):
@@ -96,7 +98,7 @@ with dpg.window(tag="Primary Window", no_resize=True, width=600, height=600):
     dpg.add_text(default_value="Seleccione la carpeta de descarga:")
     with dpg.group(horizontal=True) as path:
         path = dpg.add_input_text(hint= "Dirección del directorio", tag= "path", width=400)
-        dpg.add_button(label="Examinar", callback=examinar)
+        dpg.add_button(label="Examinar", callback=lambda: examinar(dpg))
     
     dpg.add_spacer(height=10)
     with dpg.group(horizontal=True):
@@ -106,7 +108,7 @@ with dpg.window(tag="Primary Window", no_resize=True, width=600, height=600):
     dpg.add_spacer(height=10)
     # Texto que se actualiza para ver el estado de las descargas
     with dpg.group(horizontal=True):
-        dpg.add_input_text(tag="log", multiline=True, readonly=True, width=400, height=200, enabled=False, no_horizontal_scroll=False)
+        dpg.add_input_text(tag="log", multiline=True, readonly=True, width=400, height=200, no_horizontal_scroll=False)
         with dpg.group():
             dpg.add_text("")  
             dpg.add_text("") 
@@ -115,13 +117,11 @@ with dpg.window(tag="Primary Window", no_resize=True, width=600, height=600):
     #Boton de descarga de prueba
     dpg.add_button(label="Descargar", callback=descargar)
 
-
 # Parametros de iniciacion de la ventana
-dpg.create_viewport(title='Descargador UwU', width=600, height=600, resizable=False)
-dpg.add_input_text
+dpg.create_viewport(title='Descargador UwU', width=WIDTH, height=HEIGHT, resizable=False)
 
+dpg.set_viewport_large_icon('UwU.ico')
 dpg.setup_dearpygui()
-
 dpg.show_viewport()
 
 dpg.set_primary_window("Primary Window", True)
