@@ -1,138 +1,127 @@
-import io
-import sys
-import dearpygui.dearpygui as dpg
 import os
+import dearpygui.dearpygui as dpg
+import tkinter as tk
+from tkinter import filedialog
 import yt_dlp
-from openPath import examinar
+
 
 WIDTH = 600
 HEIGHT = 600
 
+dpg.create_context()
 
-def log(msg):
-    current_text = dpg.get_value("log")
-    next_text = current_text + msg  + '\n'
-    dpg.set_value("log", next_text) 
 
-class LogRedirect(io.StringIO):
-    def write(self, msg):
-        current_text = dpg.get_value("log")
-        next_text = current_text + msg
-        dpg.set_value("log", next_text)
-        
+def examinar(dpg):
+    root = tk.Tk()
+    root.withdraw()  
+    
+    directory_path = filedialog.askdirectory(title="Selecciona una carpeta")
+    if directory_path:
+        dpg.set_value("path", directory_path)
 
+
+def setquality(dpg):
+
+    video_qualities = ["1080p", "720p", "480p", "360p", "240p"]
+    # Bitrates de audio 
+    # audio_bitrates = ["320 kbps", "256 kbps", "192 kbps", "128 kbps"]
+    audio_bitrates = ["128 kbps"]
+
+    try: 
+        dpg.delete_item("quality")
+    except: 
+        pass
+    dpg.add_combo(tag="quality", width=100, items= audio_bitrates if dpg.get_value("datatype") == "Audio" else video_qualities, 
+    before="extra", default_value=audio_bitrates[0] if dpg.get_value("datatype") == "Audio" else video_qualities[0])
+   
 def descargar():
 
-    URL = dpg.get_value("urls").strip().split('\n')
+    url = dpg.get_value("URLinput").strip().split('\n')
 
-    PATH = dpg.get_value("path").strip()
+    path = dpg.get_value("path").strip()
 
     data_type = dpg.get_value("datatype")
+    quality = dpg.get_value("quality").strip(" kbps") if dpg.get_value("datatype") == "Audio" else dpg.get_value("quality").strip('p')
 
-    if not PATH:
-        log("Por favor, seleccione una carpeta de descarga.\n")
-        return
-    
     ydl_opts = {
-    'logtostderr' : True,
-    'outtmpl': os.path.join(PATH, '%(title)s.%(ext)s'),
-    'embedthumbnail': True,
-    'writethumbnail': True
-    
+        'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
+        'writethumbnail': True,
+        'ffmpeg_location': "bin/",
+        'ignoreerrors': True
     }
 
     if data_type == "Audio":
+        ydl_opts['embedthumbnail'] = True
         ydl_opts['format'] = 'm4a/bestaudio/best'
-        ydl_opts['postprocessors'] = [{  # Extract audio using ffmpeg
-        'key': 'FFmpegExtractAudio',
-        'preferredcodec': 'm4a'
-        },
-        {
-            'key': 'EmbedThumbnail'
-        }
+        ydl_opts['postprocessors'] = [
+            {'key': 'FFmpegExtractAudio', 'preferredcodec': 'm4a'},
+            {'key': 'EmbedThumbnail'}
         ]
-           
-    for i in range(len(URL)):
+        ydl_opts['postprocessor_args'] = ['-b:a', quality]  # Ajustar bitrate
+    elif data_type == "Video":
+        max_height = quality 
+        ydl_opts['format'] = f'bestvideo[height<={max_height}]+bestaudio/best'
+        ydl_opts['merge_output_format'] = 'mp4'
+
+    for i in range(len(url)):
         try: 
             ydl = yt_dlp.YoutubeDL(ydl_opts)
-            ydl.download(URL[i])
-            log(f"Descarga completada: {url}\n")
+            ydl.download(url[i])
+            print(f"Descarga completada: {url[i]}\n")
         except Exception as e:
-            log(f"Error descargando {url}: {str(e)}\n")
-
-
-    
-def limpiar_urls():
-    dpg.set_value("urls", "")
+            print(f"Error descargando {url[i]}: {str(e)}\n")
 
 
 
-# sys.stdout = LogRedirect()
-# sys.stderr = LogRedirect()
-
-dpg.create_context()
 
 with dpg.font_registry():
     # Se pone el path de las fuentes
     default_font = dpg.add_font("assets/OpenSans-Regular.ttf", 20)
 
-
-with dpg.window(tag="Primary Window", no_resize=True, width=WIDTH, height=HEIGHT):
+with dpg.window(tag="Main Window", no_resize=True, width=WIDTH, height=HEIGHT, max_size=[600, 600], modal=True):
 
     dpg.bind_font(default_font)
 
-    
-
     dpg.add_text(default_value="Ingrese las URLs de YouTube aquí:")
+    
     with dpg.group(horizontal=True):
-
-        url = dpg.add_input_text(tag="urls", hint = "URL...", multiline=True, width=400, height= 100)   
-        with dpg.group():   
-            dpg.add_text("")  
-            dpg.add_spacer(height=1)
-            dpg.add_button(label = "Limpiar enlaces", callback=lambda: dpg.set_value("urls", ""))
         
-
+        dpg.add_input_text(tag="URLinput", hint="URLs...", multiline=True, height=100, width=400)
+        dpg.add_button(label="Limpiar enlaces", callback= lambda: dpg.set_value("URLinput", ""))
+    
+    
     dpg.add_spacer(height=10)  # Separador
     # Grupo de seleccion de directorio
     dpg.add_text(default_value="Seleccione la carpeta de descarga:")
-    with dpg.group(horizontal=True) as path:
-        path = dpg.add_input_text(hint= "Dirección del directorio", tag= "path", width=400)
-        dpg.add_button(label="Examinar", callback=lambda: examinar(dpg))
+    with dpg.group(horizontal=True):
+        dpg.add_input_text(hint= "Dirección del directorio", tag= "path", width=400)
+        dpg.add_button(label="Examinar", callback= lambda: examinar(dpg))
     
     dpg.add_spacer(height=10)
+    
     with dpg.group(horizontal=True):
         dpg.add_text(default_value="Tipo de archivo:")
-        dpg.add_combo(items=["Audio", "Video"], default_value="Audio", width= 100 , tag= "datatype" )
+        dpg.add_combo(items=["Audio", "Video"], callback= lambda: setquality(dpg) ,default_value="Audio", width= 100 , 
+        tag= "datatype" )
+        # Calidades de video
+        
+        dpg.add_text(default_value="Calidad:")
+        setquality(dpg)
+        dpg.add_spacer(tag="extra")
 
-    dpg.add_spacer(height=10)
-    # Texto que se actualiza para ver el estado de las descargas
-    with dpg.group(horizontal=True):
-        dpg.add_input_text(tag="log", multiline=True, readonly=True, width=400, height=200, no_horizontal_scroll=False)
-        with dpg.group():
-            dpg.add_text("")  
-            dpg.add_text("") 
-            dpg.add_spacer(height=2) 
-            dpg.add_button(label = "Limpiar logs", callback=lambda: dpg.set_value("log", ""))
-    #Boton de descarga de prueba
-    dpg.add_button(label="Descargar", callback=descargar)
+    
+    dpg.add_button(label="Descargar", callback= lambda: descargar())
+                
 
-# Parametros de iniciacion de la ventana
-dpg.create_viewport(title='Descargador UwU', width=WIDTH, height=HEIGHT, resizable=False)
+dpg.create_viewport(title='Descargador UwU', width=WIDTH, height=HEIGHT, resizable=False, max_height=HEIGHT, max_width=WIDTH)
 
 dpg.set_viewport_large_icon('UwU.ico')
 dpg.setup_dearpygui()
 dpg.show_viewport()
 
-dpg.set_primary_window("Primary Window", True)
+dpg.set_primary_window("Main Window", True)
 
 dpg.start_dearpygui()
-
-# while dpg.is_dearpygui_running():
-#     # insert here any code you would like to run in the render loop
-#     # you can manually stop by using stop_dearpygui()
-    
-#     dpg.render_dearpygui_frame()
 
 dpg.destroy_context()
 
