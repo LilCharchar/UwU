@@ -45,7 +45,6 @@ def descargar():
 
     ydl_opts = {
         'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
-        'writethumbnail': True,
         'ffmpeg_location': "bin/",
         'ignoreerrors': True
     }
@@ -57,11 +56,16 @@ def descargar():
             {'key': 'FFmpegExtractAudio', 'preferredcodec': 'm4a'},
             {'key': 'EmbedThumbnail'}
         ]
-        ydl_opts['postprocessor_args'] = ['-b:a', quality]  # Ajustar bitrate
+        ydl_opts['postprocessor_args'] = ['-b:a', quality] 
     elif data_type == "Video":
         max_height = quality 
-        ydl_opts['format'] = f'bestvideo[height<={max_height}]+bestaudio/best'
-        ydl_opts['merge_output_format'] = 'mp4'
+        ydl_opts['format'] = f'bestvideo[ext=mp4][height<={max_height}]+bestaudio[ext=m4a]/best'
+        ydl_opts['merge_output_format'] = 'mp4' 
+        # ydl_opts['postprocessors'] = [{
+        # 'key': 'FFmpegVideoConvertor', 
+        # 'preferedformat': 'mp4',  
+        # }]
+        ydl_opts['ffmpeg_location'] = "bin/"  
 
     for i in range(len(url)):
         try: 
