@@ -43,13 +43,15 @@ def descargar():
     data_type = dpg.get_value("datatype")
     quality = dpg.get_value("quality").strip(" kbps") if dpg.get_value("datatype") == "Audio" else dpg.get_value("quality").strip('p')
 
-    ydl_opts = {
-        'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
-        'ffmpeg_location': "bin/",
-        'ignoreerrors': True
-    }
+    ydl_opts = {}
 
     if data_type == "Audio":
+        ydl_opts = {
+        'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
+        'ffmpeg_location': "bin/",
+        'ignoreerrors': True,
+        'writethumbnail': True
+        }
         ydl_opts['embedthumbnail'] = True
         ydl_opts['format'] = 'm4a/bestaudio/best'
         ydl_opts['postprocessors'] = [
@@ -58,6 +60,11 @@ def descargar():
         ]
         ydl_opts['postprocessor_args'] = ['-b:a', quality] 
     elif data_type == "Video":
+        ydl_opts = {
+        'outtmpl': os.path.join(path, '%(title)s.%(ext)s'),
+        'ffmpeg_location': "bin/",
+        'ignoreerrors': True
+        }
         max_height = quality 
         ydl_opts['format'] = f'bestvideo[ext=mp4][height<={max_height}]+bestaudio[ext=m4a]/best'
         ydl_opts['merge_output_format'] = 'mp4' 
