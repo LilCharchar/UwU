@@ -1,0 +1,2 @@
+dearpygui
+yt-dlp

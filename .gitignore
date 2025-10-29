@@ -1,1 +1,46 @@
+# ───────────────
+# Entorno virtual
+# ───────────────
+venv/
+.env/
+.venv/
+
+# ───────────────
+# Archivos de Python
+# ───────────────
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pdb
+*.pkl
+
+# ───────────────
+# Archivos temporales / logs
+# ───────────────
+*.log
+*.tmp
+*.bak
+
+# ───────────────
+# Configuración de editores
+# ───────────────
+.vscode/
+.idea/
+*.code-workspace
+
+# ───────────────
+# Archivos del sistema
+# ───────────────
+.DS_Store
+Thumbs.db
+
+# ───────────────
+# Archivos de build o instalación
+# ───────────────
+build/
+dist/
+*.egg-info/
 bin/*
+lib64
+lib
